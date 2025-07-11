@@ -70,16 +70,11 @@ module.exports = (app, config) => {
                         } else if (fileType === 'epub' || fileType === 'mobi' || fileType === 'azw3') {
                             //перекодируем файл в нужный формат, используя fb2c
                             bookFile += `.${fileType}`;
-                            configFile = '/Users/alex/fb2c/configuration.toml';
                             if (!await fs.pathExists(bookFile)) {
                                 if (config.fb2c.length > 0) {
-                                    // fb2File = rawFile.replace(/raw$/, 'fb2');
                                     fb2File = path.resolve(rawFile.replace(/raw$/, 'fb2'));
                                     await fs.copyFile(rawFile, fb2File);
-                                    fb2c_cmd = `${config.fb2c} -c ${configFile} convert --to ${fileType} --nodirs --overwrite  ${fb2File}`;
-                                    // (require('child_process')).execSync(fb2c_cmd, {
-                                    //     cwd: `${config.publicFilesDir}${config.bookPathStatic}`
-                                    // }); 
+                                    fb2c_cmd = `${config.fb2c} -c ${config.fb2c_conf} convert --to ${fileType} --nodirs --overwrite  ${fb2File}`;
                                     (require('child_process')).execSync(fb2c_cmd, {
                                         cwd: path.dirname(fb2File)
                                     });
@@ -102,8 +97,6 @@ module.exports = (app, config) => {
                     if (gzipped)
                         res.set('Content-Encoding', 'gzip');
                     res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(downFileName)}`);
-
-                    // res.sendFile(bookFile);
                     res.sendFile(path.resolve(bookFile));
                     return;
                 } else {

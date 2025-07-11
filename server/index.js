@@ -98,6 +98,12 @@ async function init() {
         config.fb2c = ''
     }
 
+    if (argv.fb2c_conf) {
+        config.fb2c_conf = argv.fb2c_conf
+    } else {
+        config.fb2c_conf = ''
+    }
+
     if (!config.remoteLib) {
         const libDir = argv['lib-dir'] || config.libDir;
         if (libDir) {
