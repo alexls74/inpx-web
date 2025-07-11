@@ -18,18 +18,18 @@ function generateZip(zipFile, dataFile, dataFileInZip) {
                 if (err) reject(err);
                 else resolve();
             }
-        );
+            );
         zip.end();
     });
 }
 
 module.exports = (app, config) => {
-    /*
+
     config.bookPathStatic = `${config.rootPathStatic}/book`;
     config.bookDir = `${config.publicFilesDir}/book`;
-    */
+
     //загрузка или восстановление файлов в /public-files, при необходимости
-    app.use([`${config.bookPathStatic}/:fileName/:fileType`, `${config.bookPathStatic}/:fileName`], async(req, res, next) => {
+    app.use([`${config.bookPathStatic}/:fileName/:fileType`, `${config.bookPathStatic}/:fileName`], async (req, res, next) => {
         if (req.method !== 'GET' && req.method !== 'HEAD') {
             return next();
         }
@@ -52,7 +52,8 @@ module.exports = (app, config) => {
                     let gzipped = true;
 
                     //Fix downFileName extention for a file converted from fb2
-                    if (fileType === 'epub' || fileType === 'mobi' || fileType === 'azw3'){
+
+                    if (fileType === 'epub' || fileType === 'mobi' || fileType === 'azw3') {
                         downFileName = downFileName.replace(/fb2$/, fileType)
                     }
 
@@ -65,46 +66,52 @@ module.exports = (app, config) => {
                         gzipped = false;
 
                         if (fileType === undefined || fileType === 'raw') {
-                            bookFile = rawFile;                            
-                        }else if (fileType === 'epub' || fileType === 'mobi' || fileType === 'azw3'){
+                            bookFile = rawFile;
+                        } else if (fileType === 'epub' || fileType === 'mobi' || fileType === 'azw3') {
                             //перекодируем файл в нужный формат, используя fb2c
-                            bookFile += `.${fileType}`;                            
-                            if(!await fs.pathExists(bookFile)){
-                                if (config.fb2c.length > 0){
-                                    fb2File = rawFile.replace(/raw$/, 'fb2');                            
+                            bookFile += `.${fileType}`;
+                            configFile = '/Users/alex/fb2c/configuration.toml';
+                            if (!await fs.pathExists(bookFile)) {
+                                if (config.fb2c.length > 0) {
+                                    // fb2File = rawFile.replace(/raw$/, 'fb2');
+                                    fb2File = path.resolve(rawFile.replace(/raw$/, 'fb2'));
                                     await fs.copyFile(rawFile, fb2File);
-                                    fb2c_cmd = `${config.fb2c} convert --to ${fileType} --nodirs --overwrite  ${fb2File}`;
+                                    fb2c_cmd = `${config.fb2c} -c ${configFile} convert --to ${fileType} --nodirs --overwrite  ${fb2File}`;
+                                    // (require('child_process')).execSync(fb2c_cmd, {
+                                    //     cwd: `${config.publicFilesDir}${config.bookPathStatic}`
+                                    // }); 
                                     (require('child_process')).execSync(fb2c_cmd, {
-                                        cwd: `${config.publicFilesDir}${config.bookPathStatic}`
+                                        cwd: path.dirname(fb2File)
                                     });
-                                    await fs.remove(fb2File);                                    
                                 } else {
                                     throw new Error('fb2c path is not configured');
                                 }
                             }
-                        }else if (fileType === 'zip') {
+                        } else if (fileType === 'zip') {
                             //создаем zip-файл
-                            bookFile += '.zip';                            
-                            if (!await fs.pathExists(bookFile))                                
+                            bookFile += '.zip';
+                            if (!await fs.pathExists(bookFile))
                                 await generateZip(bookFile, rawFile, downFileName);
                             downFileName += '.zip';
                         } else {
                             throw new Error(`Unsupported file type: ${fileType}`);
                         }
                     }
-                    
+
                     //отдача файла
                     if (gzipped)
                         res.set('Content-Encoding', 'gzip');
                     res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(downFileName)}`);
-                    res.sendFile(bookFile);
+
+                    // res.sendFile(bookFile);
+                    res.sendFile(path.resolve(bookFile));
                     return;
                 } else {
                     await fs.remove(bookFile);
                     await fs.remove(bookFileDesc);
                 }
             }
-        } catch(e) {
+        } catch (e) {
             log(LM_ERR, e.message);
         }
 
@@ -116,7 +123,7 @@ module.exports = (app, config) => {
 
     if (config.rootPathStatic) {
         //подмена rootPath в файлах статики WebApp при необходимости
-        app.use(config.rootPathStatic, async(req, res, next) => {
+        app.use(config.rootPathStatic, async (req, res, next) => {
             if (req.method !== 'GET' && req.method !== 'HEAD') {
                 return next();
             }
@@ -135,7 +142,7 @@ module.exports = (app, config) => {
                         await fs.writeFile(flagFile, '');
                     }
                 }
-            } catch(e) {
+            } catch (e) {
                 log(LM_ERR, e.message);
             }
 
