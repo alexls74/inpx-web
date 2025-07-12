@@ -56,7 +56,7 @@
                 </div>
 
                 <div v-if="showInfo" class="q-ml-sm clickable" @click.stop.prevent="emit('bookInfo')">
-                    (инфо)
+                    (инфо)&nbsp;&nbsp;
                 </div>
 
                 <div v-if="(book.ext != 'fb2')" class="q-ml-sm clickable" @click.stop.prevent="emit('download')">

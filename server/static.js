@@ -25,39 +25,39 @@ function generateZip(zipFile, dataFile, dataFileInZip) {
 
 function sanitizeFileName(input) {
     const translitMap = {
-        'а': 'a',   'А': 'A',
-        'б': 'b',   'Б': 'B',
-        'в': 'v',   'В': 'V',
-        'г': 'g',   'Г': 'G',
-        'д': 'd',   'Д': 'D',
-        'е': 'e',   'Е': 'E',
-        'ё': 'e',   'Ё': 'E',
-        'ж': 'zh',  'Ж': 'Zh',
-        'з': 'z',   'З': 'Z',
-        'и': 'i',   'И': 'I',
-        'й': 'y',   'Й': 'Y',
-        'к': 'k',   'К': 'K',
-        'л': 'l',   'Л': 'L',
-        'м': 'm',   'М': 'M',
-        'н': 'n',   'Н': 'N',
-        'о': 'o',   'О': 'O',
-        'п': 'p',   'П': 'P',
-        'р': 'r',   'Р': 'R',
-        'с': 's',   'С': 'S',
-        'т': 't',   'Т': 'T',
-        'у': 'u',   'У': 'U',
-        'ф': 'f',   'Ф': 'F',
-        'х': 'h',   'Х': 'H',
-        'ц': 'ts',  'Ц': 'Ts',
-        'ч': 'ch',  'Ч': 'Ch',
-        'ш': 'sh',  'Ш': 'Sh',
-        'щ': 'shch','Щ': 'Shch',
-        'ы': 'y',   'Ы': 'Y',
-        'э': 'e',   'Э': 'E',
-        'ю': 'yu',  'Ю': 'Yu',
-        'я': 'ya',  'Я': 'Ya',
-        'ь': '',    'Ь': '',
-        'ъ': '',    'Ъ': ''
+        'а': 'a', 'А': 'A',
+        'б': 'b', 'Б': 'B',
+        'в': 'v', 'В': 'V',
+        'г': 'g', 'Г': 'G',
+        'д': 'd', 'Д': 'D',
+        'е': 'e', 'Е': 'E',
+        'ё': 'e', 'Ё': 'E',
+        'ж': 'zh', 'Ж': 'Zh',
+        'з': 'z', 'З': 'Z',
+        'и': 'i', 'И': 'I',
+        'й': 'y', 'Й': 'Y',
+        'к': 'k', 'К': 'K',
+        'л': 'l', 'Л': 'L',
+        'м': 'm', 'М': 'M',
+        'н': 'n', 'Н': 'N',
+        'о': 'o', 'О': 'O',
+        'п': 'p', 'П': 'P',
+        'р': 'r', 'Р': 'R',
+        'с': 's', 'С': 'S',
+        'т': 't', 'Т': 'T',
+        'у': 'u', 'У': 'U',
+        'ф': 'f', 'Ф': 'F',
+        'х': 'h', 'Х': 'H',
+        'ц': 'ts', 'Ц': 'Ts',
+        'ч': 'ch', 'Ч': 'Ch',
+        'ш': 'sh', 'Ш': 'Sh',
+        'щ': 'shch', 'Щ': 'Shch',
+        'ы': 'y', 'Ы': 'Y',
+        'э': 'e', 'Э': 'E',
+        'ю': 'yu', 'Ю': 'Yu',
+        'я': 'ya', 'Я': 'Ya',
+        'ь': '', 'Ь': '',
+        'ъ': '', 'Ъ': ''
     };
 
     return input
@@ -144,15 +144,56 @@ module.exports = (app, config) => {
                     }
 
                     //отдача файла
+
+                    // const ext = path.extname(downFileName);
+                    // const baseName = path.basename(downFileName, ext);
+                    // const safeName = sanitizeFileName(baseName) + ext;
+
+                    // if (gzipped)
+                    //     res.set('Content-Encoding', 'gzip');
+                    //     res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(safeName)}`);
+                    //     res.sendFile(path.resolve(bookFile));
+                    // return;
+                    
                     const ext = path.extname(downFileName);
-                    const baseName = path.basename(downFileName, ext);
+                    const baseName = path.basename(downFileName, ext); // для имени в Content-Disposition
                     const safeName = sanitizeFileName(baseName) + ext;
+
+                    const fullPath = path.resolve(bookFile); // файл с хеш-именем
+                    const realBase = path.basename(bookFile).replace(path.extname(bookFile), ''); // ХЕШ
 
                     if (gzipped)
                         res.set('Content-Encoding', 'gzip');
-                        res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(safeName)}`);
-                        res.sendFile(path.resolve(bookFile));
+                    res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(safeName)}`);
+
+                    res.sendFile(fullPath, async (err) => {
+                        if (err) {
+                            console.error('Ошибка при отправке файла:', err);
+                            return;
+                        }
+
+                        try {
+                            const dir = path.dirname(fullPath);
+                            const allFiles = await fs.readdir(dir);
+
+                            for (const file of allFiles) {
+                                if (
+                                    file === 'conversion.log' ||
+                                    file.startsWith(realBase + '.') ||
+                                    file === realBase
+                                ) {
+                                    await fs.remove(path.join(dir, file));
+                                    console.log(`Удалён: ${file}`);
+                                }
+                            }
+
+                            console.log(`Временные файлы для -=${baseName}=- удалены.`);
+                        } catch (e) {
+                            console.error('Ошибка при удалении временных файлов:', e);
+                        }
+                    });
                     return;
+
 
                 } else {
                     await fs.remove(bookFile);
