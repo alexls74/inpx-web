@@ -76,8 +76,8 @@
 	                </div>
 	            </div>
                 <div v-if="(book.ext == 'fb2')" >
-                    <div class="q-ml-sm clickable" @click.stop.prevent="emit('downloadMOBI')">
-	                        (mobi)  
+                    <div class="q-ml-sm clickable" @click.stop.prevent="emit('downloadAZW3')">
+	                        (azw3)  
 	                </div>
 	            </div>
                 

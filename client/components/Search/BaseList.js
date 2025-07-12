@@ -168,10 +168,10 @@ export default class BaseList {
                 d.href = href;
 
                 d.click();
-            } else if (action == 'downloadMOBI') {
-                //скачивание mobi 
+            } else if (action == 'downloadAZW3') {
+                //скачивание azw3 
                 const d = this.$refs.download;
-                href += '/mobi';
+                href += '/azw3';
                 d.href = href;
 
                 d.click();
@@ -232,7 +232,7 @@ export default class BaseList {
                 break;
             case 'download':
             case 'downloadEPUB':
-            case 'downloadMOBI':
+            case 'downloadAZW3':
             case 'copyLink':
             case 'readBook':
             case 'bookInfo':

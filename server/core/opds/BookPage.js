@@ -152,7 +152,7 @@ class BookPage extends BasePage {
                     [ext]: bookInfo.link,
                 };
 
-                if (ext === 'mobi') {
+                if (ext === 'azw3') {
                     formats['x-mobipocket-ebook'] = bookInfo.link;
                 } else if (ext == 'epub') {
                     formats[`${ext}+zip`] = bookInfo.link;
