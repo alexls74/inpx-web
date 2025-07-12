@@ -23,6 +23,55 @@ function generateZip(zipFile, dataFile, dataFileInZip) {
     });
 }
 
+function sanitizeFileName(input) {
+    const translitMap = {
+        'а': 'a',   'А': 'A',
+        'б': 'b',   'Б': 'B',
+        'в': 'v',   'В': 'V',
+        'г': 'g',   'Г': 'G',
+        'д': 'd',   'Д': 'D',
+        'е': 'e',   'Е': 'E',
+        'ё': 'e',   'Ё': 'E',
+        'ж': 'zh',  'Ж': 'Zh',
+        'з': 'z',   'З': 'Z',
+        'и': 'i',   'И': 'I',
+        'й': 'y',   'Й': 'Y',
+        'к': 'k',   'К': 'K',
+        'л': 'l',   'Л': 'L',
+        'м': 'm',   'М': 'M',
+        'н': 'n',   'Н': 'N',
+        'о': 'o',   'О': 'O',
+        'п': 'p',   'П': 'P',
+        'р': 'r',   'Р': 'R',
+        'с': 's',   'С': 'S',
+        'т': 't',   'Т': 'T',
+        'у': 'u',   'У': 'U',
+        'ф': 'f',   'Ф': 'F',
+        'х': 'h',   'Х': 'H',
+        'ц': 'ts',  'Ц': 'Ts',
+        'ч': 'ch',  'Ч': 'Ch',
+        'ш': 'sh',  'Ш': 'Sh',
+        'щ': 'shch','Щ': 'Shch',
+        'ы': 'y',   'Ы': 'Y',
+        'э': 'e',   'Э': 'E',
+        'ю': 'yu',  'Ю': 'Yu',
+        'я': 'ya',  'Я': 'Ya',
+        'ь': '',    'Ь': '',
+        'ъ': '',    'Ъ': ''
+    };
+
+    return input
+        .split('')
+        .map(char => translitMap[char] ?? char)
+        .join('')
+        .replace(/\s+/g, '_')               // пробелы → _
+        .replace(/\./g, '_')                // точки → _
+        .replace(/[^a-zA-Z0-9_-]/g, '')     // убрать всё, кроме латиницы, цифр, подчёркивания, дефиса
+        .replace(/_+/g, '_')                // несколько подчёркиваний → одно
+        .replace(/^_+|_+$/g, '');           // обрезать подчёркивания по краям
+}
+
+
 module.exports = (app, config) => {
 
     config.bookPathStatic = `${config.rootPathStatic}/book`;
@@ -54,7 +103,8 @@ module.exports = (app, config) => {
                     //Fix downFileName extention for a file converted from fb2
 
                     if (fileType === 'epub' || fileType === 'mobi' || fileType === 'azw3') {
-                        downFileName = downFileName.replace(/fb2$/, fileType)
+                        downFileName = downFileName.replace(/fb2$/, fileType);
+
                     }
 
                     if (!req.acceptsEncodings('gzip') || fileType) {
@@ -94,11 +144,16 @@ module.exports = (app, config) => {
                     }
 
                     //отдача файла
+                    const ext = path.extname(downFileName);
+                    const baseName = path.basename(downFileName, ext);
+                    const safeName = sanitizeFileName(baseName) + ext;
+
                     if (gzipped)
                         res.set('Content-Encoding', 'gzip');
-                    res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(downFileName)}`);
-                    res.sendFile(path.resolve(bookFile));
+                        res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(safeName)}`);
+                        res.sendFile(path.resolve(bookFile));
                     return;
+
                 } else {
                     await fs.remove(bookFile);
                     await fs.remove(bookFileDesc);
