@@ -82,9 +82,9 @@
 	            </div>
                 
                 
-                <div class="q-ml-sm clickable" @click.stop.prevent="emit('copyLink')">
+                <!-- <div class="q-ml-sm clickable" @click.stop.prevent="emit('copyLink')">
                     <q-icon name="la la-copy" size="20px" />
-                </div>
+                </div> -->
 
                 <div v-if="showReadLink" class="q-ml-sm clickable" @click.stop.prevent="emit('readBook')">
                     (читать)
