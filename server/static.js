@@ -154,7 +154,7 @@ module.exports = (app, config) => {
                     //     res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(safeName)}`);
                     //     res.sendFile(path.resolve(bookFile));
                     // return;
-                    
+
                     const ext = path.extname(downFileName);
                     const baseName = path.basename(downFileName, ext); // для имени в Content-Disposition
                     const safeName = sanitizeFileName(baseName) + ext;
