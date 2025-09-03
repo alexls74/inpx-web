@@ -2,3 +2,4 @@
 /server/.inpx-web*
 /dist
 dev*.sh
+.DS_Store
