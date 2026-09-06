@@ -3,3 +3,5 @@
 /dist
 dev*.sh
 .DS_Store
+/.vscode
+*.code-workspace

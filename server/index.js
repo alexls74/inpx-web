@@ -14,7 +14,8 @@ let log;
 let config;
 let argv;
 let branch = '';
-const argvStrings = ['host', 'port', 'config', 'data-dir', 'app-dir', 'lib-dir', 'inpx'];
+const argvStrings = ['host', 'port', 'config', 'data-dir', 'app-dir', 'lib-dir', 'inpx',
+    'fb2c', 'fb2c_conf', 'fbc', 'fbc_conf'];
 
 function showHelp(defaultConfig) {
     console.log(utils.versionText(defaultConfig));
@@ -29,7 +30,10 @@ Options:
   --data-dir=<dirpath> (or --app-dir) Set application working directory, default: <execDir>/.${defaultConfig.name}
   --lib-dir=<dirpath>  Set library directory, default: the same as ${defaultConfig.name} executable's
   --inpx=<filepath>    Set INPX collection file, default: the one that found in library dir
-  --fb2c=<filepath>    Set fb2c path
+  --fb2c=<filepath>    Set fb2c path (fb2converter: epub, mobi, azw3)
+  --fb2c_conf=<filepath> Set fb2c configuration file (TOML)
+  --fbc=<filepath>     Set fbc path (fb2cng: kfx)
+  --fbc_conf=<filepath> Set fbc configuration file (YAML)
   --recreate           Force recreation of the search database on start
   --unsafe-filter      Use filter config at your own risk
 `
@@ -102,6 +106,18 @@ async function init() {
         config.fb2c_conf = argv.fb2c_conf
     } else {
         config.fb2c_conf = ''
+    }
+
+    if (argv.fbc) {
+        config.fbc = argv.fbc
+    } else {
+        config.fbc = ''
+    }
+
+    if (argv.fbc_conf) {
+        config.fbc_conf = argv.fbc_conf
+    } else {
+        config.fbc_conf = ''
     }
 
     if (!config.remoteLib) {

@@ -161,17 +161,10 @@ export default class BaseList {
                 d.href = href;                
 
                 d.click();
-            }else if (action == 'downloadEPUB') {
-                //скачивание epub                
+            } else if (action.startsWith('download')) {
+                //скачивание с конвертацией: downloadEPUB -> /epub, downloadAZW3 -> /azw3, downloadKFX -> /kfx
                 const d = this.$refs.download;
-                href += '/epub';		        
-                d.href = href;
-
-                d.click();
-            } else if (action == 'downloadAZW3') {
-                //скачивание azw3 
-                const d = this.$refs.download;
-                href += '/azw3';
+                href += `/${action.slice('download'.length).toLowerCase()}`;
                 d.href = href;
 
                 d.click();
@@ -233,6 +226,7 @@ export default class BaseList {
             case 'download':
             case 'downloadEPUB':
             case 'downloadAZW3':
+            case 'downloadKFX':
             case 'copyLink':
             case 'readBook':
             case 'bookInfo':

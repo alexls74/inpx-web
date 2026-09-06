@@ -1,12 +1,20 @@
 const fs = require('fs-extra');
 const path = require('path');
 const yazl = require('yazl');
+const execFile = require('util').promisify(require('child_process').execFile);
 
 const express = require('express');
 const utils = require('./core/utils');
 const webAppDir = require('../build/appdir');
 
 const log = new (require('./core/AppLogger'))().log;//singleton
+
+//форматы, которые получаются конвертацией из fb2
+//epub/mobi/azw3 - через fb2c (fb2converter), kfx - через fbc (fb2cng)
+const CONVERT_TYPES = ['epub', 'mobi', 'azw3', 'kfx'];
+
+//мусор, который конвертеры оставляют в рабочем каталоге
+const CONVERTER_LOGS = ['conversion.log', 'fbc.log'];
 
 function generateZip(zipFile, dataFile, dataFileInZip) {
     return new Promise((resolve, reject) => {
@@ -102,7 +110,7 @@ module.exports = (app, config) => {
 
                     //Fix downFileName extention for a file converted from fb2
 
-                    if (fileType === 'epub' || fileType === 'mobi' || fileType === 'azw3') {
+                    if (CONVERT_TYPES.includes(fileType)) {
                         downFileName = downFileName.replace(/fb2$/, fileType);
 
                     }
@@ -117,20 +125,44 @@ module.exports = (app, config) => {
 
                         if (fileType === undefined || fileType === 'raw') {
                             bookFile = rawFile;
-                        } else if (fileType === 'epub' || fileType === 'mobi' || fileType === 'azw3') {
-                            //перекодируем файл в нужный формат, используя fb2c
+                        } else if (CONVERT_TYPES.includes(fileType)) {
+                            //перекодируем файл в нужный формат
                             bookFile += `.${fileType}`;
                             if (!await fs.pathExists(bookFile)) {
-                                if (config.fb2c.length > 0) {
-                                    fb2File = path.resolve(rawFile.replace(/raw$/, 'fb2'));
-                                    await fs.copyFile(rawFile, fb2File);
-                                    fb2c_cmd = `${config.fb2c} -c ${config.fb2c_conf} convert --to ${fileType} --nodirs --overwrite  ${fb2File}`;
-                                    (require('child_process')).execSync(fb2c_cmd, {
-                                        cwd: path.dirname(fb2File)
-                                    });
+                                const fb2File = path.resolve(rawFile.replace(/raw$/, 'fb2'));
+                                await fs.copyFile(rawFile, fb2File);
+
+                                let bin = '';
+                                let args = [];
+
+                                if (fileType === 'kfx') {
+                                    //fb2cng: умеет kfx напрямую, без kindlegen
+                                    if (!config.fbc)
+                                        throw new Error('fbc path is not configured');
+
+                                    bin = config.fbc;
+                                    if (config.fbc_conf)
+                                        args.push('-c', config.fbc_conf);
+                                    //--output-file задает точный путь результата,
+                                    //output_name_template при этом игнорируется
+                                    args.push(
+                                        'convert', '--to', 'kfx', '--overwrite',
+                                        '-o', path.resolve(bookFile), fb2File
+                                    );
                                 } else {
-                                    throw new Error('fb2c path is not configured');
+                                    //fb2converter: epub/mobi/azw3
+                                    if (!config.fb2c)
+                                        throw new Error('fb2c path is not configured');
+
+                                    bin = config.fb2c;
+                                    if (config.fb2c_conf)
+                                        args.push('-c', config.fb2c_conf);
+                                    args.push(
+                                        'convert', '--to', fileType, '--nodirs', '--overwrite', fb2File
+                                    );
                                 }
+
+                                await execFile(bin, args, {cwd: path.dirname(fb2File)});
                             }
                         } else if (fileType === 'zip') {
                             //создаем zip-файл
@@ -162,11 +194,19 @@ module.exports = (app, config) => {
                     const fullPath = path.resolve(bookFile); // файл с хеш-именем
                     const realBase = path.basename(bookFile).replace(path.extname(bookFile), ''); // ХЕШ
 
+                    // if (gzipped)
+                    //     res.set('Content-Encoding', 'gzip');
+                    // res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(safeName)}`);
+
+                    // res.sendFile(fullPath, async (err) => {
                     if (gzipped)
                         res.set('Content-Encoding', 'gzip');
-                    res.set('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(safeName)}`);
+
+                    const disposition = (fileType && fileType !== 'raw') ? 'attachment' : 'inline';
+                    res.set('Content-Disposition', `${disposition}; filename*=UTF-8''${encodeURIComponent(safeName)}`);
 
                     res.sendFile(fullPath, async (err) => {
+
                         if (err) {
                             console.error('Ошибка при отправке файла:', err);
                             return;
@@ -178,7 +218,7 @@ module.exports = (app, config) => {
 
                             for (const file of allFiles) {
                                 if (
-                                    file === 'conversion.log' ||
+                                    CONVERTER_LOGS.includes(file) ||
                                     file.startsWith(realBase + '.') ||
                                     file === realBase
                                 ) {

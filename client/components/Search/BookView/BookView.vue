@@ -80,6 +80,11 @@
 	                        (azw3)  
 	                </div>
 	            </div>
+                <div v-if="(book.ext == 'fb2')" >
+                    <div class="q-ml-sm clickable" @click.stop.prevent="emit('downloadKFX')">
+	                        (kfx)  
+	                </div>
+	            </div>
                 
                 
                 <!-- <div class="q-ml-sm clickable" @click.stop.prevent="emit('copyLink')">
